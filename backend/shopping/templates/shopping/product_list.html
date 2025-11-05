@@ -1,0 +1,147 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}商品列表 - 商品管理系统{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">商品列表 (SPU)</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{% url 'shopping:category_management' %}" class="button is-info">
+                <span class="icon"><i class="fas fa-folder"></i></span>
+                <span>分类管理</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <a href="{% url 'shopping:attribute_management' %}" class="button is-info">
+                <span class="icon"><i class="fas fa-tags"></i></span>
+                <span>属性管理</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <a href="{% url 'shopping:spu_create' %}" class="button is-primary">
+                <span class="icon"><i class="fas fa-plus"></i></span>
+                <span>新建商品</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 搜索和过滤 -->
+<div class="box">
+    <form method="get" action="">
+        <div class="field is-grouped">
+            <p class="control is-expanded">
+                <input class="input" type="text" name="search" placeholder="搜索商品名称..." value="{{ search }}">
+            </p>
+            <p class="control">
+                <div class="select">
+                    <select name="category">
+                        <option value="">所有分类</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.display_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </p>
+            <p class="control">
+                <button class="button is-info" type="submit">
+                    <span class="icon"><i class="fas fa-search"></i></span>
+                    <span>搜索</span>
+                </button>
+            </p>
+            <p class="control">
+                <a href="{% url 'shopping:product_management' %}" class="button is-light">
+                    <span class="icon"><i class="fas fa-redo"></i></span>
+                    <span>重置</span>
+                </a>
+            </p>
+        </div>
+    </form>
+</div>
+
+<!-- 商品列表 -->
+<div class="table-container">
+    <table class="table is-fullwidth is-striped is-hoverable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>图片</th>
+                <th>商品名称</th>
+                <th>品牌</th>
+                <th>系列</th>
+                <th>分类</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for spu in spus %}
+            <tr>
+                <td>{{ spu.id }}</td>
+                <td>
+                    {% with spu.images.first as main_image %}
+                        {% if main_image %}
+                        <figure class="image is-48x48">
+                            <img src="{{ main_image.image.url }}" alt="{{ spu.name }}" class="image-preview" style="width: 48px; height: 48px;">
+                        </figure>
+                        {% else %}
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="fas fa-image fa-2x"></i>
+                        </span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td><strong>{{ spu.name }}</strong></td>
+                <td>{{ spu.brand|default:"-" }}</td>
+                <td>{{ spu.series|default:"-" }}</td>
+                <td>{{ spu.category.name }}</td>
+                <td>
+                    {% if spu.is_active %}
+                    <span class="tag is-success">上架</span>
+                    {% else %}
+                    <span class="tag is-danger">下架</span>
+                    {% endif %}
+                </td>
+                <td>{{ spu.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <div class="buttons are-small">
+                        <a href="{% url 'shopping:sku_management' spu.id %}" class="button is-info" title="管理SKU">
+                            <span class="icon"><i class="fas fa-list"></i></span>
+                        </a>
+                        <a href="{% url 'shopping:spu_attribute_management' spu.id %}" class="button is-warning" title="设置属性">
+                            <span class="icon"><i class="fas fa-tags"></i></span>
+                        </a>
+                        <a href="{% url 'shopping:spu_edit' spu.id %}" class="button is-primary" title="编辑">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <form method="post" action="{% url 'shopping:spu_delete' spu.id %}" style="display: inline;" onsubmit="return confirm('确定删除这个商品吗？这将删除所有关联的SKU！');">
+                            {% csrf_token %}
+                            <button type="submit" class="button is-danger" title="删除">
+                                <span class="icon"><i class="fas fa-trash"></i></span>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="has-text-centered has-text-grey">
+                    <p class="py-6">
+                        <span class="icon is-large"><i class="fas fa-inbox fa-3x"></i></span>
+                        <br>暂无商品数据
+                    </p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

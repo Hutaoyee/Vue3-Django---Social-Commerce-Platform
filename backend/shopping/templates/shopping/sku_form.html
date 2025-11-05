@@ -1,0 +1,237 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}{% if sku %}编辑SKU{% else %}新建SKU{% endif %} - 商品管理系统{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
+        <li><a href="{% url 'shopping:sku_management' spu.id %}">SKU管理</a></li>
+        <li class="is-active"><a href="#" aria-current="page">{% if sku %}编辑SKU{% else %}新建SKU{% endif %}</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">{% if sku %}编辑SKU{% else %}新建SKU{% endif %}</h1>
+<p class="subtitle">商品：{{ spu.name }}</p>
+
+<div class="box">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="field">
+            <label class="label">SKU标题 <span class="has-text-danger">*</span></label>
+            <div class="control">
+                <input class="input" type="text" name="title" value="{{ sku.title|default:'' }}" required>
+            </div>
+            <p class="help">例如：白色-L码、黑色-XL码</p>
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">价格 <span class="has-text-danger">*</span></label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" name="price" step="0.01" min="0" value="{{ sku.price|default:'' }}" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-yen-sign"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="field">
+                    <label class="label">库存数量 <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="number" name="stock" min="0" value="{{ current_stock|default:0 }}" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 属性选择 -->
+        {% if attributes_with_values %}
+        <div class="field">
+            <label class="label">商品属性</label>
+            {% for item in attributes_with_values %}
+            <div class="field">
+                <label class="label is-size-6">{{ item.attribute.name }} <span class="has-text-danger">*</span></label>
+                <div class="control">
+                    <div class="select is-fullwidth">
+                        <select name="attr_{{ item.attribute.id }}" required>
+                            <option value="">请选择{{ item.attribute.name }}</option>
+                            {% for value in item.values %}
+                            <option value="{{ value.id }}" 
+                                {% if item.current_value == value.id %}selected{% endif %}>
+                                {{ value.value }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="notification is-warning">
+            <p><strong>提示：</strong>该商品还没有设置属性。</p>
+            <p>请先 <a href="{% url 'shopping:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
+        </div>
+        {% endif %}
+
+        <!-- SKU图片管理 -->
+        {% if sku %}
+        <div class="field">
+            <label class="label">SKU图片</label>
+            <div class="control">
+                <div class="columns is-multiline">
+                    {% for image in sku_images %}
+                    <div class="column is-one-quarter">
+                        <div class="image-item">
+                            <img src="{{ image.image.url }}" alt="SKU图片" class="image-preview">
+                            <button type="button" class="delete-image-btn" data-image-id="{{ image.id }}" title="删除图片">
+                                <i class="fas fa-times has-text-danger"></i>
+                            </button>
+                            {% if image.is_main %}
+                            <span class="tag is-primary is-small" style="position: absolute; bottom: 5px; left: 5px;">主图</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="column">
+                        <p class="help has-text-grey">暂无图片</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="field">
+            <label class="label">{% if sku %}添加SKU图片{% else %}上传SKU图片{% endif %}</label>
+            <div class="control">
+                <div class="file has-name is-fullwidth">
+                    <label class="file-label">
+                        <input class="file-input" type="file" name="images" multiple accept="image/*" id="fileInput">
+                        <span class="file-cta">
+                            <span class="file-icon">
+                                <i class="fas fa-upload"></i>
+                            </span>
+                            <span class="file-label">
+                                选择文件...
+                            </span>
+                        </span>
+                        <span class="file-name" id="fileName">
+                            未选择文件
+                        </span>
+                    </label>
+                </div>
+                <p class="help">上传此SKU专属的图片。如果不上传，前端展示时将使用SPU的主图</p>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="control">
+                <label class="checkbox">
+                    <input type="checkbox" name="is_active" {% if not sku or sku.is_active %}checked{% endif %}>
+                    上架销售
+                </label>
+            </div>
+        </div>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary" {% if not attributes_with_values %}disabled{% endif %}>
+                    <span class="icon"><i class="fas fa-save"></i></span>
+                    <span>保存</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{% url 'shopping:sku_management' spu.id %}" class="button is-light">
+                    <span class="icon"><i class="fas fa-times"></i></span>
+                    <span>取消</span>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 文件选择显示
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                if (fileInput.files.length === 1) {
+                    fileName.textContent = fileInput.files[0].name;
+                } else {
+                    fileName.textContent = `已选择 ${fileInput.files.length} 个文件`;
+                }
+            } else {
+                fileName.textContent = '未选择文件';
+            }
+        });
+    }
+    
+    // 删除图片功能
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteButtons = document.querySelectorAll('.delete-image-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!confirm('确定删除这张图片吗？')) {
+                    return;
+                }
+                
+                const imageId = this.getAttribute('data-image-id');
+                const imageItem = this.closest('.image-item');
+                
+                fetch(`/api/manage/image/${imageId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('删除失败');
+                })
+                .then(data => {
+                    if (data.success) {
+                        imageItem.closest('.column').remove();
+                        alert('图片已删除');
+                    } else {
+                        alert('删除失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    alert('删除失败: ' + error.message);
+                });
+            });
+        });
+    });
+    
+    // 获取CSRF Token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

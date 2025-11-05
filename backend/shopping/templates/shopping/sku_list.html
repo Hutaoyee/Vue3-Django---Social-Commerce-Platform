@@ -1,0 +1,132 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}SKU管理 - {{ spu.name }} - 商品管理系统{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
+        <li class="is-active"><a href="#" aria-current="page">SKU管理</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <h1 class="title">SKU管理</h1>
+                <br>
+                <p class="subtitle">商品：{{ spu.name }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{% url 'shopping:sku_create' spu.id %}" class="button is-primary">
+                <span class="icon"><i class="fas fa-plus"></i></span>
+                <span>新建SKU</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if spu_attributes.count == 0 %}
+<div class="notification is-warning">
+    <p><strong>提示：</strong>该商品还没有设置属性。</p>
+    <p>请先 <a href="{% url 'shopping:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
+</div>
+{% endif %}
+
+<!-- SKU列表 -->
+<div class="box">
+    <table class="table is-fullwidth is-striped is-hoverable">
+        <thead>
+            <tr>
+                <th>图片</th>
+                <th>SKU编码</th>
+                <th>标题</th>
+                <th>属性</th>
+                <th>价格</th>
+                <th>库存</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sku in skus %}
+            <tr>
+                <td>
+                    {% with sku.images.first as sku_image %}
+                        {% if sku_image %}
+                        <figure class="image is-48x48">
+                            <img src="{{ sku_image.image.url }}" alt="{{ sku.title }}" class="image-preview" style="width: 48px; height: 48px;">
+                        </figure>
+                        {% else %}
+                        <span class="icon is-large has-text-grey-light">
+                            <i class="fas fa-image fa-2x"></i>
+                        </span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td><code>{{ sku.sku_code }}</code></td>
+                <td><strong>{{ sku.title }}</strong></td>
+                <td>
+                    <div class="tags">
+                        {% for attr_value in sku.attribute_values.all %}
+                        <span class="tag is-info is-light">
+                            {{ attr_value.attribute.name }}: {{ attr_value.attribute_value.value }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td><strong class="has-text-danger">¥{{ sku.price }}</strong></td>
+                <td>
+                    {% with sku.inventory as inventory %}
+                        {% if inventory %}
+                            {% if inventory.quantity > 10 %}
+                            <span class="tag is-success">{{ inventory.quantity }}</span>
+                            {% elif inventory.quantity > 0 %}
+                            <span class="tag is-warning">{{ inventory.quantity }}</span>
+                            {% else %}
+                            <span class="tag is-danger">0</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="tag is-danger">无库存记录</span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if sku.is_active %}
+                    <span class="tag is-success">上架</span>
+                    {% else %}
+                    <span class="tag is-danger">下架</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="buttons are-small">
+                        <a href="{% url 'shopping:sku_edit' sku.sku_code %}" class="button is-primary">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <form method="post" action="{% url 'shopping:sku_delete' sku.sku_code %}" style="display: inline;" onsubmit="return confirm('确定删除这个SKU吗？');">
+                            {% csrf_token %}
+                            <button type="submit" class="button is-danger">
+                                <span class="icon"><i class="fas fa-trash"></i></span>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="has-text-centered has-text-grey">
+                    <p class="py-6">
+                        <span class="icon is-large"><i class="fas fa-inbox fa-3x"></i></span>
+                        <br>暂无SKU数据
+                    </p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

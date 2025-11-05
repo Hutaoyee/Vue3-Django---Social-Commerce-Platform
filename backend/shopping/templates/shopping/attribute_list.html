@@ -1,0 +1,165 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}属性管理 - 商品管理系统{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">属性管理</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{% url 'shopping:product_management' %}" class="button is-info">
+                <span class="icon"><i class="fas fa-box"></i></span>
+                <span>商品管理</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <a href="{% url 'shopping:category_management' %}" class="button is-info">
+                <span class="icon"><i class="fas fa-folder"></i></span>
+                <span>分类管理</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <button class="button is-primary" onclick="showAttributeModal()">
+                <span class="icon"><i class="fas fa-plus"></i></span>
+                <span>新建属性</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 属性列表 -->
+<div class="columns is-multiline">
+    {% for attribute in attributes %}
+    <div class="column is-half">
+        <div class="box">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h3 class="title is-5">{{ attribute.name }}</h3>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <div class="buttons are-small">
+                            <button class="button is-info" data-attribute-id="{{ attribute.id }}" data-attribute-name="{{ attribute.name|escapejs }}" onclick="showValueModal(this)">
+                                <span class="icon"><i class="fas fa-plus"></i></span>
+                                <span>添加值</span>
+                            </button>
+                            <form method="post" action="{% url 'shopping:attribute_delete' attribute.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性「{{ attribute.name }}」吗？这将删除所有相关的属性值和SKU关联！');">
+                                {% csrf_token %}
+                                <button type="submit" class="button is-danger">
+                                    <span class="icon"><i class="fas fa-trash"></i></span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tags">
+                {% for value in attribute.values.all %}
+                <span class="tag is-medium is-info is-light">
+                    {{ value.value }}
+                    <form method="post" action="{% url 'shopping:attribute_value_delete' value.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性值「{{ value.value }}」吗？');">
+                        {% csrf_token %}
+                        <button type="submit" class="delete is-small"></button>
+                    </form>
+                </span>
+                {% empty %}
+                <span class="has-text-grey-light">暂无属性值</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="column is-full">
+        <div class="notification">
+            <p class="has-text-centered has-text-grey">
+                <span class="icon is-large"><i class="fas fa-inbox fa-3x"></i></span>
+                <br>暂无属性数据
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 新建属性模态框 -->
+<div class="modal" id="attributeModal">
+    <div class="modal-background" onclick="closeAttributeModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">新建属性</p>
+            <button class="delete" aria-label="close" onclick="closeAttributeModal()"></button>
+        </header>
+        <form method="post" action="{% url 'shopping:attribute_create' %}">
+            {% csrf_token %}
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">属性名称 <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="text" name="name" placeholder="例如：颜色、尺码、材质" required>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button type="submit" class="button is-primary">创建</button>
+                <button type="button" class="button" onclick="closeAttributeModal()">取消</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<!-- 添加属性值模态框 -->
+<div class="modal" id="valueModal">
+    <div class="modal-background" onclick="closeValueModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">添加属性值 - <span id="attributeName"></span></p>
+            <button class="delete" aria-label="close" onclick="closeValueModal()"></button>
+        </header>
+        <form method="post" id="valueForm">
+            {% csrf_token %}
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">属性值 <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="text" name="value" placeholder="例如：红色、XL、棉质" required>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button type="submit" class="button is-primary">添加</button>
+                <button type="button" class="button" onclick="closeValueModal()">取消</button>
+            </footer>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showAttributeModal() {
+        document.getElementById('attributeModal').classList.add('is-active');
+    }
+
+    function closeAttributeModal() {
+        document.getElementById('attributeModal').classList.remove('is-active');
+    }
+
+    function showValueModal(button) {
+        const attrId = button.getAttribute('data-attribute-id');
+        const attrName = button.getAttribute('data-attribute-name');
+        document.getElementById('attributeName').textContent = attrName;
+        document.getElementById('valueForm').action = `/api/manage/attribute/${attrId}/value/create/`;
+        document.getElementById('valueModal').classList.add('is-active');
+    }
+
+    function closeValueModal() {
+        document.getElementById('valueModal').classList.remove('is-active');
+    }
+</script>
+{% endblock %}

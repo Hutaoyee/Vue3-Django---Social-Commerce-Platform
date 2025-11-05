@@ -1,0 +1,142 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}分类管理{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <h1 class="title">分类管理</h1>
+            </div>
+        </div>
+        <div class="level-right">
+            <div class="level-item">
+                <a href="{% url 'shopping:product_management' %}" class="button is-info">
+                    <span class="icon">
+                        <i class="fas fa-box"></i>
+                    </span>
+                    <span>商品管理</span>
+                </a>
+            </div>
+            <div class="level-item">
+                <a href="{% url 'shopping:category_create' %}" class="button is-primary">
+                    <span class="icon">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span>新建分类</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="notification {% if message.tags == 'error' %}is-danger{% elif message.tags == 'success' %}is-success{% endif %}">
+            <button class="delete"></button>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="box">
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>分类名称</th>
+                    <th>层级</th>
+                    <th>商品数量</th>
+                    <th>子分类数</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td>
+                        {% for i in category.get_level_range %}
+                            <span style="margin-left: 1rem;"></span>
+                        {% endfor %}
+                        {% if category.level > 0 %}
+                            <span class="has-text-grey">└</span>
+                        {% endif %}
+                        {{ category.name }}
+                    </td>
+                    <td>
+                        <span class="tag {% if category.level == 0 %}is-info{% elif category.level == 1 %}is-success{% else %}is-warning{% endif %}">
+                            Level {{ category.level }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="tag is-light">
+                            {{ category.productspu_set.count }} 个
+                        </span>
+                    </td>
+                    <td>
+                        <span class="tag is-light">
+                            {{ category.get_children.count }} 个
+                        </span>
+                    </td>
+                    <td>
+                        <div class="buttons">
+                            <a href="{% url 'shopping:category_edit' category.id %}" class="button is-small is-info">
+                                <span class="icon">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                                <span>编辑</span>
+                            </a>
+                            <form method="post" action="{% url 'shopping:category_delete' category.id %}" style="display: inline;" 
+                                  onsubmit="return confirm('确定要删除分类 {{ category.name }} 吗？');">
+                                {% csrf_token %}
+                                <button type="submit" class="button is-small is-danger">
+                                    <span class="icon">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                    <span>删除</span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="has-text-centered has-text-grey">暂无分类</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="box has-background-light">
+        <h3 class="subtitle is-5">统计信息</h3>
+        <div class="columns">
+            <div class="column">
+                <div class="has-text-centered">
+                    <p class="heading">总分类数</p>
+                    <p class="title">{{ categories.count }}</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="has-text-centered">
+                    <p class="heading">顶级分类</p>
+                    <p class="title">{{ root_categories_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 删除通知
+    document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+</script>
+{% endblock %}

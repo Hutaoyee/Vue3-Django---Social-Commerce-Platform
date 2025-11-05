@@ -1,0 +1,213 @@
+{% extends 'shopping/base.html' %}
+
+{% block title %}{% if spu %}编辑商品{% else %}新建商品{% endif %} - 商品管理系统{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
+        <li class="is-active"><a href="#" aria-current="page">{% if spu %}编辑商品{% else %}新建商品{% endif %}</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">{% if spu %}编辑商品{% else %}新建商品{% endif %}</h1>
+
+<div class="box">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="field">
+            <label class="label">商品名称 <span class="has-text-danger">*</span></label>
+            <div class="control">
+                <input class="input" type="text" name="name" value="{{ spu.name|default:'' }}" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label">商品描述</label>
+            <div class="control">
+                <textarea class="textarea" name="description" rows="4">{{ spu.description|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">分类 <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="category" required>
+                                <option value="">请选择分类</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if spu and spu.category.id == category.id %}selected{% endif %}>
+                                    {{ category.display_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="field">
+                    <label class="label">品牌</label>
+                    <div class="control">
+                        <input class="input" type="text" name="brand" value="{{ spu.brand|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="field">
+                    <label class="label">系列</label>
+                    <div class="control">
+                        <input class="input" type="text" name="series" value="{{ spu.series|default:'' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="control">
+                <label class="checkbox">
+                    <input type="checkbox" name="is_active" {% if not spu or spu.is_active %}checked{% endif %}>
+                    上架销售
+                </label>
+            </div>
+        </div>
+
+        {% if spu %}
+        <div class="field">
+            <label class="label">商品主图</label>
+            <div class="control">
+                {% with images.first as main_image %}
+                    {% if main_image %}
+                    <div class="image-item">
+                        <img src="{{ main_image.image.url }}" alt="商品主图" class="image-preview">
+                        <button type="button" class="delete-image-btn" data-image-id="{{ main_image.id }}" title="删除主图">
+                            <i class="fas fa-times has-text-danger"></i>
+                        </button>
+                        <span class="tag is-primary is-small" style="position: absolute; bottom: 5px; left: 5px;">主图</span>
+                    </div>
+                    {% else %}
+                    <p class="help has-text-grey">暂无主图</p>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="field">
+            <label class="label">{% if spu %}更换主图{% else %}上传主图{% endif %} <span class="has-text-danger">*</span></label>
+            <div class="control">
+                <div class="file has-name is-fullwidth">
+                    <label class="file-label">
+                        <input class="file-input" type="file" name="images" accept="image/*" id="fileInput" {% if not spu %}required{% endif %}>
+                        <span class="file-cta">
+                            <span class="file-icon">
+                                <i class="fas fa-upload"></i>
+                            </span>
+                            <span class="file-label">
+                                选择文件...
+                            </span>
+                        </span>
+                        <span class="file-name" id="fileName">
+                            未选择文件
+                        </span>
+                    </label>
+                </div>
+                <p class="help">只需上传一张主图，SKU的图片可在SKU管理页面上传</p>
+            </div>
+        </div>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary">
+                    <span class="icon"><i class="fas fa-save"></i></span>
+                    <span>保存</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{% url 'shopping:product_management' %}" class="button is-light">
+                    <span class="icon"><i class="fas fa-times"></i></span>
+                    <span>取消</span>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 文件选择显示
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = fileInput.files[0].name;
+        } else {
+            fileName.textContent = '未选择文件';
+        }
+    });
+    
+    // 删除图片功能
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteButtons = document.querySelectorAll('.delete-image-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!confirm('确定删除这张图片吗？')) {
+                    return;
+                }
+                
+                const imageId = this.getAttribute('data-image-id');
+                const imageItem = this.closest('.image-item');
+                
+                fetch(`/api/manage/image/${imageId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('删除失败');
+                })
+                .then(data => {
+                    if (data.success) {
+                        imageItem.remove();
+                        alert('图片已删除');
+                    } else {
+                        alert('删除失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    alert('删除失败: ' + error.message);
+                });
+            });
+        });
+    });
+    
+    // 获取CSRF Token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}
