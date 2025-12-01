@@ -104,37 +104,6 @@ npm run dev
 npm run build
 ```
 
-## 开发指南
-
-### 代码规范
-
-前端使用 ESLint 和 Prettier：
-
-```bash
-npm run lint    # 检查代码
-npm run format  # 格式化代码
-```
-
-### 测试
-
-```bash
-# 单元测试
-npm run test:unit
-
-# E2E 测试
-npm run test:e2e
-```
-
-## 部署
-
-### 生产环境配置
-
-1. 设置环境变量（`.env` 文件）
-2. 收集静态文件：`python manage.py collectstatic`
-3. 使用 Gunicorn 运行 Django
-4. 配置 Nginx 反向代理
-5. 前端构建并部署到静态文件服务器
-
 ## 许可证
 
 MIT License

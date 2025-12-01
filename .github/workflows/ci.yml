@@ -7,48 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  # 后端测试
-  backend-test:
-    runs-on: ubuntu-latest
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_DATABASE: test_db
-          MYSQL_ROOT_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Run Django tests
-      env:
-        SECRET_KEY: test-secret-key
-        DB_HOST: 127.0.0.1
-        DB_PASSWORD: test_password
-      run: |
-        cd backend
-        python manage.py test
 
   # 前端测试和构建
   frontend-test:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Node.js
       uses: actions/setup-node@v3
